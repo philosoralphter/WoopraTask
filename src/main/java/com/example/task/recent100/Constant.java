@@ -32,7 +32,7 @@ public class Constant {
   //filename
   public static final String MAPPER = "_Mapper_";
   public static final String REDUCER = "_Reducer_";
-  public static final String REPORT = "_Report";
+  public static final String REPORT = "_report.csv";
   public static final String REDUCER_DONE = "_Reducer_Done";
   public static final String DEDUP = "_dedup";
 }
