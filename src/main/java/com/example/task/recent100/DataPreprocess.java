@@ -81,5 +81,6 @@ public class DataPreprocess {
     }
 
     out.close();
+    System.out.println("Preprocess done. New file: " + newFile.getAbsolutePath());
   }
 }
