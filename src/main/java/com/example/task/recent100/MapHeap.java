@@ -3,7 +3,13 @@ package com.example.task.recent100;
 import java.util.HashMap;
 import java.util.Map;
 
-/** reference: http://algs4.cs.princeton.edu/lectures/24PriorityQueues.pdf */
+/**
+ * MapHeap(min_heap)
+ *
+ * @reference: http://algs4.cs.princeton.edu/lectures/24PriorityQueues.pdf
+ * @author Sha Wang
+ * @version 0.1 2017-6-29
+ */
 public class MapHeap {
 
   UserRecord[] heap;
@@ -26,6 +32,7 @@ public class MapHeap {
     return map.size();
   }
 
+  //put one record to Heap
   public void put(UserRecord ur) {
     if (map.containsKey(ur.getPid())) {
       //contained the user visit record
@@ -46,7 +53,7 @@ public class MapHeap {
     }
   }
 
-  //
+  //return the oldest visit record in Heap.
   public UserRecord getPeek() {
     return heap[1];
   }
@@ -57,7 +64,7 @@ public class MapHeap {
     sink(map.get(ur.getPid()));
   }
 
-  //pop the oldest one
+  //pop the oldest visit record in Heap.
   public UserRecord pop() {
     if (size() == 0) {
       return null;

@@ -2,6 +2,7 @@ package com.example.task.recent100;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
@@ -20,6 +21,12 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+/**
+ * Master
+ *
+ * @author Sha Wang
+ * @version 0.1 2017-6-29
+ */
 public class Master {
 
   public static void main(String[] args) throws Exception {
@@ -52,7 +59,15 @@ public class Master {
             .desc("The number of records per shard.")
             .build();
     options.addOption(s);
-
+    Option r =
+        Option.builder("r")
+            .required(false)
+            .type(Number.class)
+            .hasArg()
+            .argName("resultCount")
+            .desc("The count of records in report.")
+            .build();
+    options.addOption(r);
     //parser
     CommandLineParser parser = new DefaultParser();
     CommandLine cmd = parser.parse(options, args);
@@ -63,13 +78,19 @@ public class Master {
       return;
     }
 
+    //Parameter assignment
     String path;
     int mapperCount = Constant.MAPPER_COUNT;
     int recordNumPerFile = Constant.RECORD_NUM_PER_FILE;
+    int recentNCount = Constant.RECENT_N_COUNT;
     try {
       path = cmd.getOptionValue("f");
       if (path == null || path.isEmpty()) {
         throw new ParseException("filename");
+      }
+      File inputfile = new File(path);
+      if (!inputfile.exists()) {
+        throw new FileNotFoundException();
       }
 
       if (cmd.hasOption('m')) {
@@ -86,8 +107,19 @@ public class Master {
         }
       }
 
+      if (cmd.hasOption('r')) {
+        recentNCount = ((Number) cmd.getParsedOptionValue("r")).intValue();
+        if (recordNumPerFile <= 0) {
+          throw new ParseException("records in report");
+        }
+      }
     } catch (ParseException e) {
       System.out.println("Ivalid arguments: " + e.getMessage());
+      HelpFormatter formatter = new HelpFormatter();
+      formatter.printHelp("Master", options);
+      return;
+    } catch (FileNotFoundException e) {
+      System.out.println("File does not exist!");
       HelpFormatter formatter = new HelpFormatter();
       formatter.printHelp("Master", options);
       return;
@@ -95,8 +127,9 @@ public class Master {
 
     System.out.println("MapReduce arguments:");
     System.out.println("  Input: " + path);
-    System.out.println("  #(Records) Per Shard: " + String.valueOf(recordNumPerFile));
-    System.out.println("  #(Mapper): " + String.valueOf(mapperCount));
+    System.out.println("  #(Most Recent Visit) : " + recentNCount);
+    System.out.println("  #(Records) Per Shard: " + recordNumPerFile);
+    System.out.println("  #(Mapper): " + mapperCount);
     System.out.println("  #(Reducer): 1 (non-configurable)");
 
     Master master = new Master();
@@ -126,7 +159,7 @@ public class Master {
     System.out.println("Started server: " + ip + ":" + port);
 
     // start Mapper
-    master.startMapper(ip, port, tmpPath, mapperCount);
+    master.startMapper(ip, port, tmpPath, mapperCount, recentNCount);
     System.out.println("Started " + mapperCount + " Mapper.");
 
     // listen from Mappers, until all job done.
@@ -175,14 +208,13 @@ public class Master {
      */
 
     // start Reducer
-    master.startReducer(tmpPath, mapperCount);
+    master.startReducer(tmpPath, mapperCount, recentNCount);
     System.out.println("Started 1 Reducer.");
 
     // Use done files to confirm Reducer has finished.
     while (true) {
       File done_file = new File(tmpPath + Constant.REDUCER_DONE);
       if (done_file.exists()) {
-        System.out.println("Reducers finished!");
         break;
       }
       //TimeUnit.MINUTES.sleep(1);
@@ -196,13 +228,14 @@ public class Master {
   }
 
   // data sharding
-  public int fileSharding(String path, String dir, int recordNumPerFile) {
+  public int fileSharding(String path, String dir, int recordNumPerFile) throws IOException {
     DataSharding ds = new DataSharding();
     return ds.dataSharding(path, dir, recordNumPerFile);
   }
 
   // start Mapper
-  public void startMapper(String ip, int port, String path, int mapperCount) throws IOException {
+  public void startMapper(String ip, int port, String path, int mapperCount, int recentNCount)
+      throws IOException {
     Runtime run = Runtime.getRuntime();
     for (int mapperIndex = 0; mapperIndex < mapperCount; mapperIndex++) {
       Process mapper =
@@ -215,12 +248,14 @@ public class Master {
                   + " "
                   + port
                   + " "
-                  + path);
+                  + path
+                  + " "
+                  + recentNCount);
     }
   }
 
   // start Reducer
-  public void startReducer(String path, int mapperCount) throws IOException {
+  public void startReducer(String path, int mapperCount, int recentNCount) throws IOException {
     Runtime run = Runtime.getRuntime();
     for (int reducerIndex = 0; reducerIndex < Constant.REDUCER_COUNT; reducerIndex++) {
       Process reducer =
@@ -231,7 +266,9 @@ public class Master {
                   + " "
                   + path
                   + " "
-                  + mapperCount);
+                  + mapperCount
+                  + " "
+                  + recentNCount);
     }
   }
 

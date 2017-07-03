@@ -10,11 +10,16 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Stack;
 
 import org.json.JSONObject;
 
+/**
+ * DataPreprocess
+ *
+ * @author Sha Wang
+ * @version 0.1 2017-6-29
+ */
 public class DataPreprocess {
   public static void main(String[] args) throws IOException {
     //first generate pid mapping, then create new file
@@ -37,13 +42,8 @@ public class DataPreprocess {
       }
     }
 
-    System.out.print("\n old Hashmap:  \n");
-    for (Entry<String, String> ent : pidMapping.entrySet()) {
-      System.err.print("key:  " + ent.getKey() + "        value:   " + ent.getValue() + "\n");
-    }
-
+    //remove temporary pid, update to final pid
     Stack<String> tmp = new Stack<String>();
-    //
     for (String key : pidMapping.keySet()) {
       while (pidMapping.containsKey(key)) {
         tmp.push(key);
@@ -56,23 +56,20 @@ public class DataPreprocess {
       }
     }
 
-    System.out.print("\n New Hashmap:  \n");
-    for (Entry<String, String> ent : pidMapping.entrySet()) {
-      System.err.print("key:  " + ent.getKey() + "     value:   " + ent.getValue() + "\n");
-    }
     return pidMapping;
   }
 
   //create new file named "{priorname}.dedup".
   private void createNewFile(Map<String, String> pidMapping, String path) throws IOException {
-    // TODO Auto-generated method stub
     BufferedReader br = new BufferedReader(new FileReader(new File(path)));
     String line;
-    File newFile = new File(path + "_dedup");
+    File newFile = new File(path + Constant.DEDUP);
     OutputStream out = new BufferedOutputStream(new FileOutputStream(newFile));
 
     while ((line = br.readLine()) != null) {
       JSONObject obj = new JSONObject(line);
+
+      //replace pid use pidmapping
       if (obj.getString("type").equals("visit") && pidMapping.containsKey(obj.getString("pid"))) {
         line =
             line.replaceAll(

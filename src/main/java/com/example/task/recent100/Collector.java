@@ -9,6 +9,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 
+/**
+ * Collector: output the final result.
+ *
+ * @author Sha Wang
+ * @version 0.1 2017-7-2
+ */
 public class Collector {
   public String generateReport(String path, String tmpPath, int reduceCount) throws IOException {
     File outFile = new File(path + Constant.REPORT);

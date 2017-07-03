@@ -28,3 +28,6 @@ hs_err_pid*
 .classpath
 .project
 .settings/
+
+# Maven generated files
+target/

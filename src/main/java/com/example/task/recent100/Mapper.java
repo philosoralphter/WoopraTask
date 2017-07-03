@@ -14,31 +14,40 @@ import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Scanner;
 
+/**
+ * Mapper
+ *
+ * @author Sha Wang
+ * @version 0.1 2017-6-30
+ */
 public class Mapper {
-  private MapHeap mapHeap;
+  private MapHeap heap;
   private File file;
   private OutputStream out;
 
   public static void main(String[] args) throws IOException {
-
-    //Constant.CREATE_MAPPER_PROCESS + " " + mapper_Index + " " + ip + " " + port + " " + path);
-    Mapper mapper = new Mapper();
+    //parser the arguments
     int mapperId = Integer.valueOf(args[0]);
     String serverHost = args[1];
     int serverPort = Integer.valueOf(args[2]);
     String path = args[3];
+    int recentNCount = Integer.valueOf(args[4]);
 
-    mapper.run(path, serverHost, serverPort, mapperId);
+    //start the real job
+    Mapper mapper = new Mapper();
+    mapper.run(path, serverHost, serverPort, mapperId, recentNCount);
   }
 
   //run
-  public void run(String path, String serverHost, int serverPort, int mapperId) throws IOException {
-    setup(path, mapperId);
+  public void run(String path, String serverHost, int serverPort, int mapperId, int recentNCount)
+      throws IOException {
+    //initialize
+    setup(path, mapperId, recentNCount);
+
+    //asking for jobs, until no more job
     while (true) {
       String job = commWithSrv(Constant.JOB_REQUEST, serverHost, serverPort);
       if (job.equals(Constant.NO_MORE_JOB)) {
-        cleanup();
-        commWithSrv(Constant.JOB_FINISHED, serverHost, serverPort);
         break;
       } else {
         File file = new File(path + "_" + String.format("%05d", Integer.valueOf(job)));
@@ -50,12 +59,18 @@ public class Mapper {
         }
       }
     }
+
+    //final
+    cleanup();
+
+    //notify the Master all job done
+    commWithSrv(Constant.JOB_FINISHED, serverHost, serverPort);
   }
 
   //clear
   private void cleanup() throws IOException {
     UserRecord tmp;
-    while ((tmp = this.mapHeap.pop()) != null) {
+    while ((tmp = this.heap.pop()) != null) {
       output(tmp.getPid(), String.valueOf(tmp.getTime()));
     }
     this.out.close();
@@ -66,7 +81,7 @@ public class Mapper {
     DataConvert dc = new DataConvert();
     UserRecord ur = dc.getLatestRecord(input);
     if (ur != null) {
-      this.mapHeap.put(ur);
+      this.heap.put(ur);
     }
   }
 
@@ -76,9 +91,9 @@ public class Mapper {
     this.out.write(bytes);
   }
 
-  //initialize
-  private void setup(String path, int mapperId) throws IOException {
-    this.mapHeap = new MapHeap(Constant.RECENT_N_COUNT);
+  //initialize, new heap and open output stream
+  private void setup(String path, int mapperId, int recentNCount) throws IOException {
+    this.heap = new MapHeap(recentNCount);
     this.file = new File(path + Constant.MAPPER + mapperId);
     this.out = new BufferedOutputStream(new FileOutputStream(this.file));
   }
@@ -91,8 +106,6 @@ public class Mapper {
     Scanner scanner = new Scanner(new BufferedInputStream(socket.getInputStream()), "UTF-8");
     scanner.useLocale(Locale.US);
 
-    System.err.println("Connected to " + serverHost + " on port " + serverPort);
-
     // send over socket to server
     out.println(request);
 
@@ -100,7 +113,6 @@ public class Mapper {
     String reply = scanner.nextLine();
 
     // close IO streams, then socket
-    System.err.println("Closing connection to " + serverHost);
     out.close();
     scanner.close();
     socket.close();

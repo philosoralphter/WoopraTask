@@ -1,5 +1,11 @@
 package com.example.task.recent100;
 
+/**
+ * UserRecord(pid and last visit timestamp in one record)
+ *
+ * @author Sha Wang
+ * @version 0.1 2017-6-29
+ */
 public class UserRecord implements Comparable<UserRecord> {
   //user id
   private String pid;

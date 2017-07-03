@@ -4,16 +4,13 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
- * Json convert（use org.json）
- *
- * <p>
+ * DataConvert（use org.json）
  *
  * @author Sha Wang
- * @version 1.0 2017-6-29
- * @see
+ * @version 0.1 2017-6-29
  */
 public class DataConvert {
-  //convert one piece of user record
+  //convert one user record from JSON to UserRecord
   public UserRecord getLatestRecord(String input) {
     //get JSONObject from input
     JSONObject obj = new JSONObject(input);
